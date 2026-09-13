@@ -1,0 +1,40 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+env/
+
+# Environment
+.env
+
+# Audio / video datasets
+*.wav
+*.mp3
+*.flac
+*.mp4
+*.m4a
+*.ogg
+
+# Large datasets / generated ML data
+*.npz
+*.npy
+data/
+ml_rebuild/data/
+
+# Model files
+*.pth
+*.pt
+*.ckpt
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Generated evaluation outputs
+*.png
+*.csv

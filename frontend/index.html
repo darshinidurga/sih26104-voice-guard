@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VoiceGuard SOC Dashboard</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <header>
+        <div class="logo">
+            <div class="logo-dot"></div>
+            VoiceGuard <span>SOC</span>
+        </div>
+        <div class="status-indicator">
+            System Online
+        </div>
+    </header>
+
+    <main>
+       
+       <!-- Column 1: Protected Call -->
+<div class="col-upload glass-card">
+    <div class="card-title">
+        🎙️
+        Protected Call
+    </div>
+
+    <div class="call-status" id="callStatus">
+        <div class="status-dot"></div>
+        <span>Ready to protect</span>
+    </div>
+
+    <div class="mic-zone" id="micZone">
+        <div class="mic-icon">🎙️</div>
+        <div class="mic-title">VoiceGuard Protection</div>
+        <div class="mic-subtitle">
+            Start a protected call to analyze the voice in real time.
+        </div>
+    </div>
+
+    <button id="startCallBtn" class="btn">
+        Start Protected Call
+    </button>
+
+    <button id="stopCallBtn" class="btn btn-danger" style="display:none;">
+        Stop Protected Call
+    </button>
+
+    <div class="call-info" id="callInfo">
+        Microphone: Not connected
+    </div>
+</div>
+
+        <!-- Column 2: Results -->
+        <div class="col-results glass-card">
+            <div class="card-title">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+                Threat Analysis
+            </div>
+
+            <div class="result-group">
+                <div class="metric">
+                    <div class="metric-label">Voice Authenticity</div>
+                    <div class="metric-value" id="valAuthenticity">--</div>
+                </div>
+                <div class="score-gauge">
+                    <div class="score-fill" id="gaugeAuthenticity" style="width: 0%"></div>
+                </div>
+
+                <div class="metric">
+                    <div class="metric-label">Overall Risk Level</div>
+                    <div class="metric-value" id="valRisk">--</div>
+                </div>
+
+                <div class="metric">
+                    <div class="metric-label">Scam Score</div>
+                    <div class="metric-value" id="valScamScore">--</div>
+                </div>
+            </div>
+
+            <ul class="scam-indicators" id="indicatorList">
+                <!-- Indicators will be injected here -->
+            </ul>
+        </div>
+
+        <!-- Column 3: Transcript -->
+        <div class="col-transcript glass-card" style="grid-row: span 2;">
+            <div class="card-title">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+                Live Transcript
+            </div>
+            <div class="transcript-box" id="transcriptBox">Awaiting audio input...</div>
+        </div>
+
+        <!-- Demo Mode Panel -->
+        <div class="col-upload glass-card" id="demoPanel">
+            <div class="card-title">
+                🎬 Demonstration Mode
+            </div>
+            <div class="demo-desc">
+                Run a controlled demonstration using pre-supplied audio samples.
+                Results are produced by the real VoiceGuard pipeline.
+            </div>
+            <button id="demoRealBtn" class="btn btn-demo">
+                🟢 Real Human Voice
+            </button>
+            <button id="demoClonedBtn" class="btn btn-demo btn-demo-warn">
+                🔴 Cloned Voice
+            </button>
+            <button id="demoScamBtn" class="btn btn-demo btn-demo-danger">
+                ⚠️ Cloned Scam Call
+            </button>
+            <div class="demo-badge" id="demoBadge" style="display:none;">
+                🎬 CONTROLLED DEMO
+            </div>
+            <div id="demoError" class="demo-error" style="display:none;"></div>
+        </div>
+    </main>
+
+    <!-- Verification Challenge Modal -->
+    <div class="modal-overlay" id="challengeModal">
+        <div class="modal">
+            <div class="modal-icon">🛑</div>
+            <div class="modal-title">HIGH RISK DETECTED</div>
+            <div class="modal-desc">
+                VoiceClone or Scam characteristics identified. A verification challenge must be issued to the caller immediately.
+            </div>
+            <button class="btn btn-danger" onclick="closeModal()">Initiate Verification Challenge</button>
+            <button class="btn" style="background: transparent; border: 1px solid var(--card-border); margin-top: 1rem;" onclick="closeModal()">Dismiss</button>
+        </div>
+    </div>
+
+    <script src="/static/app.js"></script>
+</body>
+</html>

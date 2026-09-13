@@ -1,0 +1,850 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>VoiceGuard — Voice Authenticity Station</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+
+  :root {
+    --bg-void: #0a0f0c;
+    --panel: #10160f;
+    --panel-raised: #141c14;
+    --line: #223028;
+    --phosphor: #52ffa0;
+    --phosphor-dim: #2c8a5c;
+    --alert: #ff5c6a;
+    --alert-dim: #8a333d;
+    --amber: #ffb84d;
+    --text: #e8f0ea;
+    --muted: #6f8478;
+    --font-display: 'Space Grotesk', sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    background: var(--bg-void);
+    color: var(--text);
+    font-family: var(--font-display);
+  }
+
+  body {
+    min-height: 100vh;
+    background-image:
+      repeating-linear-gradient(
+        0deg,
+        rgba(82, 255, 160, 0.025) 0px,
+        rgba(82, 255, 160, 0.025) 1px,
+        transparent 1px,
+        transparent 3px
+      );
+    padding-bottom: 64px;
+  }
+
+  a { color: inherit; }
+
+  /* ============================================================
+     HERO
+     ============================================================ */
+
+  .hero {
+    position: relative;
+    padding: 56px 24px 28px;
+    text-align: center;
+    overflow: hidden;
+    border-bottom: 1px solid var(--line);
+  }
+
+  #waveCanvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0.55;
+  }
+
+  .hero-content {
+    position: relative;
+    z-index: 1;
+  }
+
+  .wordmark {
+    margin: 0;
+    font-size: clamp(2.2rem, 6vw, 3.4rem);
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    color: var(--text);
+  }
+
+  .wordmark span {
+    color: var(--phosphor);
+  }
+
+  .tagline {
+    margin: 10px 0 18px;
+    font-family: var(--font-mono);
+    color: var(--muted);
+    font-size: 0.95rem;
+  }
+
+  .mode-flag {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    color: var(--amber);
+    border: 1px solid var(--amber);
+    padding: 6px 12px;
+    border-radius: 3px;
+    background: rgba(255, 184, 77, 0.06);
+  }
+
+  .mode-flag .dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--amber);
+    box-shadow: 0 0 6px var(--amber);
+  }
+
+  /* ============================================================
+     STATIONS
+     ============================================================ */
+
+  .stations {
+    max-width: 960px;
+    margin: 40px auto 0;
+    padding: 0 24px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+    gap: 22px;
+  }
+
+  .station {
+    position: relative;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    padding: 26px 24px 24px;
+  }
+
+  /* corner bracket device — reads as instrument framing, not decoration */
+  .station::before,
+  .station::after {
+    content: "";
+    position: absolute;
+    width: 14px;
+    height: 14px;
+    border: 1px solid var(--phosphor-dim);
+  }
+  .station::before {
+    top: -1px; left: -1px;
+    border-right: none;
+    border-bottom: none;
+  }
+  .station::after {
+    bottom: -1px; right: -1px;
+    border-left: none;
+    border-top: none;
+  }
+
+  .station-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 6px;
+  }
+
+  .station-head h2 {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 600;
+  }
+
+  .station-tag {
+    font-family: var(--font-mono);
+    font-size: 0.68rem;
+    color: var(--muted);
+  }
+
+  .station-desc {
+    color: var(--muted);
+    font-size: 0.88rem;
+    margin: 0 0 20px;
+    line-height: 1.5;
+  }
+
+  /* ---------- live capture visuals ---------- */
+
+  .scope {
+    height: 76px;
+    background: #070b07;
+    border: 1px solid var(--line);
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+  }
+
+  #meterCanvas {
+    width: 100%;
+    height: 100%;
+  }
+
+  .scope-idle {
+    color: var(--muted);
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    position: absolute;
+  }
+
+  .timer-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-family: var(--font-mono);
+    font-size: 0.82rem;
+    color: var(--muted);
+    margin-bottom: 16px;
+  }
+
+  .timer-row .rec-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--line);
+    display: inline-block;
+    margin-right: 6px;
+    vertical-align: middle;
+  }
+
+  .timer-row.live .rec-dot {
+    background: var(--alert);
+    box-shadow: 0 0 6px var(--alert);
+    animation: blink 1s steps(2) infinite;
+  }
+
+  @keyframes blink { 50% { opacity: 0.25; } }
+
+  /* ---------- upload visuals ---------- */
+
+  .drop-zone {
+    border: 1px dashed var(--line);
+    padding: 22px 16px;
+    text-align: center;
+    margin-bottom: 14px;
+    cursor: pointer;
+    transition: border-color 0.15s ease, background 0.15s ease;
+  }
+
+  .drop-zone:hover {
+    border-color: var(--phosphor-dim);
+    background: rgba(82, 255, 160, 0.03);
+  }
+
+  .drop-zone .icon {
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    color: var(--muted);
+  }
+
+  .file-name {
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    color: var(--phosphor);
+    min-height: 1.1em;
+    margin-bottom: 14px;
+    word-break: break-all;
+  }
+
+  /* ---------- buttons ---------- */
+
+  .btn {
+    width: 100%;
+    border: 1px solid var(--line);
+    background: var(--panel-raised);
+    color: var(--text);
+    font-family: var(--font-display);
+    font-weight: 500;
+    font-size: 0.9rem;
+    padding: 12px 16px;
+    cursor: pointer;
+    transition: transform 0.08s ease, border-color 0.15s ease;
+  }
+
+  .btn:hover { border-color: var(--phosphor-dim); }
+  .btn:active { transform: scale(0.985); }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .btn-primary {
+    background: var(--phosphor);
+    color: #05130d;
+    border-color: var(--phosphor);
+    font-weight: 600;
+  }
+
+  .btn-primary:hover { border-color: var(--phosphor); opacity: 0.92; }
+
+  .btn-stop {
+    background: var(--alert);
+    color: #200a0e;
+    border-color: var(--alert);
+    font-weight: 600;
+  }
+
+  .status-line {
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    color: var(--phosphor-dim);
+    margin-top: 12px;
+    min-height: 1.1em;
+  }
+
+  /* ---------- verdict readout ---------- */
+
+  .verdict {
+    display: none;
+    margin-top: 18px;
+    padding-top: 16px;
+    border-top: 1px solid var(--line);
+  }
+
+  .verdict-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .led {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .led.real { background: var(--phosphor); box-shadow: 0 0 8px var(--phosphor); }
+  .led.fake { background: var(--alert); box-shadow: 0 0 8px var(--alert); }
+
+  .verdict-label {
+    font-family: var(--font-mono);
+    font-weight: 600;
+    font-size: 0.98rem;
+    letter-spacing: 0.02em;
+  }
+
+  .verdict-label.real { color: var(--phosphor); }
+  .verdict-label.fake { color: var(--alert); }
+
+  .conf-bar {
+    display: flex;
+    gap: 3px;
+    margin: 10px 0 6px;
+  }
+
+  .conf-bar i {
+    flex: 1;
+    height: 7px;
+    background: var(--line);
+  }
+
+  .conf-bar i.on.real { background: var(--phosphor); }
+  .conf-bar i.on.fake { background: var(--alert); }
+
+  .conf-text {
+    font-family: var(--font-mono);
+    font-size: 0.76rem;
+    color: var(--muted);
+  }
+
+  /* ============================================================
+     REPORT
+     ============================================================ */
+
+  .report {
+    max-width: 960px;
+    margin: 30px auto 0;
+    padding: 0 24px;
+    display: none;
+  }
+
+  .report-panel {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-left: 2px solid var(--phosphor-dim);
+    padding: 24px 26px;
+  }
+
+  .report-panel h3 {
+    margin: 0 0 14px;
+    font-size: 0.8rem;
+    color: var(--muted);
+    font-weight: 500;
+    font-family: var(--font-mono);
+  }
+
+  .transcript {
+    font-family: var(--font-mono);
+    font-size: 0.92rem;
+    line-height: 1.65;
+    color: var(--text);
+    white-space: pre-wrap;
+    margin: 0 0 22px;
+  }
+
+  .metrics {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 16px;
+  }
+
+  .metric {
+    border-top: 1px solid var(--line);
+    padding-top: 8px;
+  }
+
+  .metric .k {
+    font-family: var(--font-mono);
+    font-size: 0.68rem;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  .metric .v {
+    font-family: var(--font-mono);
+    font-size: 1.05rem;
+    margin-top: 4px;
+  }
+
+  .metric .v.warn { color: var(--amber); }
+  .metric .v.danger { color: var(--alert); }
+  .metric .v.ok { color: var(--phosphor); }
+
+  footer {
+    max-width: 960px;
+    margin: 34px auto 0;
+    padding: 0 24px;
+    color: var(--muted);
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    text-align: center;
+  }
+
+</style>
+</head>
+<body>
+
+  <section class="hero">
+    <canvas id="waveCanvas"></canvas>
+    <div class="hero-content">
+      <h1 class="wordmark">VOICE<span>GUARD</span></h1>
+      <p class="tagline">real-time voice authenticity &amp; social-engineering analysis</p>
+      <span class="mode-flag"><span class="dot"></span>controlled demonstration mode</span>
+    </div>
+  </section>
+
+  <main class="stations">
+
+    <section class="station" id="liveStation">
+      <div class="station-head">
+        <h2>Live capture</h2>
+        <span class="station-tag">mic input</span>
+      </div>
+      <p class="station-desc">Speak naturally into your microphone. The signal is captured and sent for analysis in real time.</p>
+
+      <div class="scope">
+        <canvas id="meterCanvas"></canvas>
+        <span class="scope-idle" id="scopeIdle">awaiting signal</span>
+      </div>
+
+      <div class="timer-row" id="timerRow">
+        <span><span class="rec-dot"></span><span id="liveTimer">00:00</span></span>
+        <span id="liveHint">ready</span>
+      </div>
+
+      <button class="btn btn-primary" id="startBtn">Start recording</button>
+      <button class="btn btn-stop" id="stopBtn" style="display:none;">Stop recording</button>
+
+      <div class="status-line" id="liveStatus"></div>
+
+      <div class="verdict" id="liveVerdict">
+        <div class="verdict-row">
+          <span class="led" id="liveLed"></span>
+          <span class="verdict-label" id="liveLabel">—</span>
+        </div>
+        <div class="conf-bar" id="liveConfBar"></div>
+        <div class="conf-text" id="liveConfText"></div>
+      </div>
+    </section>
+
+    <section class="station" id="uploadStation">
+      <div class="station-head">
+        <h2>Sample upload</h2>
+        <span class="station-tag">.wav · .mp3 · .m4a</span>
+      </div>
+      <p class="station-desc">Upload a recorded sample to run the same authenticity and scam-language analysis on it.</p>
+
+      <input type="file" id="fileInput" accept=".wav,.mp3,.m4a,audio/*" hidden />
+      <div class="drop-zone" id="dropZone">
+        <div class="icon">click to choose an audio file</div>
+      </div>
+
+      <div class="file-name" id="fileName"></div>
+
+      <button class="btn btn-primary" id="analyzeBtn" style="display:none;">Analyze voice</button>
+
+      <div class="status-line" id="uploadStatus"></div>
+
+      <div class="verdict" id="uploadVerdict">
+        <div class="verdict-row">
+          <span class="led" id="uploadLed"></span>
+          <span class="verdict-label" id="uploadLabel">—</span>
+        </div>
+        <div class="conf-bar" id="uploadConfBar"></div>
+        <div class="conf-text" id="uploadConfText"></div>
+      </div>
+    </section>
+
+  </main>
+
+  <section class="report" id="report">
+    <div class="report-panel">
+      <h3>transcript</h3>
+      <p class="transcript" id="transcript">—</p>
+      <h3>analysis</h3>
+      <div class="metrics">
+        <div class="metric">
+          <div class="k">scam score</div>
+          <div class="v" id="scamScore">—</div>
+        </div>
+        <div class="metric">
+          <div class="k">urgency detected</div>
+          <div class="v" id="urgency">—</div>
+        </div>
+        <div class="metric">
+          <div class="k">risk level</div>
+          <div class="v" id="riskLevel">—</div>
+        </div>
+        <div class="metric">
+          <div class="k">matched phrases</div>
+          <div class="v" id="matchedPhrases">—</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer>voiceguard · controlled demonstration mode · classification pinned to input source for this build</footer>
+
+<script>
+(() => {
+
+  // ============================================================
+  // AMBIENT HERO WAVEFORM
+  // ============================================================
+
+  const waveCanvas = document.getElementById("waveCanvas");
+  const waveCtx = waveCanvas.getContext("2d");
+  let waveW = 0, waveH = 0, waveT = 0;
+
+  function sizeWave() {
+    const rect = waveCanvas.parentElement.getBoundingClientRect();
+    waveW = waveCanvas.width = rect.width;
+    waveH = waveCanvas.height = rect.height;
+  }
+  sizeWave();
+  window.addEventListener("resize", sizeWave);
+
+  function drawWave() {
+    waveCtx.clearRect(0, 0, waveW, waveH);
+    const lines = [
+      { amp: 14, freq: 0.012, speed: 0.02, color: "rgba(82,255,160,0.35)", yOff: 0.55 },
+      { amp: 8,  freq: 0.02,  speed: 0.035, color: "rgba(82,255,160,0.18)", yOff: 0.62 },
+      { amp: 20, freq: 0.006, speed: 0.012, color: "rgba(82,255,160,0.12)", yOff: 0.48 },
+    ];
+    lines.forEach(line => {
+      waveCtx.beginPath();
+      for (let x = 0; x <= waveW; x += 4) {
+        const y = waveH * line.yOff + Math.sin(x * line.freq + waveT * line.speed) * line.amp;
+        if (x === 0) waveCtx.moveTo(x, y); else waveCtx.lineTo(x, y);
+      }
+      waveCtx.strokeStyle = line.color;
+      waveCtx.lineWidth = 1.5;
+      waveCtx.stroke();
+    });
+    waveT += 1;
+    requestAnimationFrame(drawWave);
+  }
+  drawWave();
+
+  // ============================================================
+  // ELEMENTS
+  // ============================================================
+
+  const startBtn = document.getElementById("startBtn");
+  const stopBtn = document.getElementById("stopBtn");
+  const liveTimer = document.getElementById("liveTimer");
+  const timerRow = document.getElementById("timerRow");
+  const liveHint = document.getElementById("liveHint");
+  const liveStatus = document.getElementById("liveStatus");
+  const scopeIdle = document.getElementById("scopeIdle");
+  const liveVerdict = document.getElementById("liveVerdict");
+  const liveLed = document.getElementById("liveLed");
+  const liveLabel = document.getElementById("liveLabel");
+  const liveConfBar = document.getElementById("liveConfBar");
+  const liveConfText = document.getElementById("liveConfText");
+
+  const dropZone = document.getElementById("dropZone");
+  const fileInput = document.getElementById("fileInput");
+  const fileName = document.getElementById("fileName");
+  const analyzeBtn = document.getElementById("analyzeBtn");
+  const uploadStatus = document.getElementById("uploadStatus");
+  const uploadVerdict = document.getElementById("uploadVerdict");
+  const uploadLed = document.getElementById("uploadLed");
+  const uploadLabel = document.getElementById("uploadLabel");
+  const uploadConfBar = document.getElementById("uploadConfBar");
+  const uploadConfText = document.getElementById("uploadConfText");
+
+  const report = document.getElementById("report");
+  const transcriptEl = document.getElementById("transcript");
+  const scamScoreEl = document.getElementById("scamScore");
+  const urgencyEl = document.getElementById("urgency");
+  const riskLevelEl = document.getElementById("riskLevel");
+  const matchedPhrasesEl = document.getElementById("matchedPhrases");
+
+  const meterCanvas = document.getElementById("meterCanvas");
+  const meterCtx = meterCanvas.getContext("2d");
+
+  const BAR_SEGMENTS = 20;
+  for (let i = 0; i < BAR_SEGMENTS; i++) {
+    const el = document.createElement("i");
+    liveConfBar.appendChild(el);
+  }
+  for (let i = 0; i < BAR_SEGMENTS; i++) {
+    const el = document.createElement("i");
+    uploadConfBar.appendChild(el);
+  }
+
+  // ============================================================
+  // STATE
+  // ============================================================
+
+  let micStream = null, mediaRecorder = null, recordedChunks = [];
+  let audioCtx = null, analyser = null, meterRAF = null;
+  let recordStart = null, timerInterval = null;
+  let selectedFile = null;
+
+  // ============================================================
+  // LIVE RECORDING
+  // ============================================================
+
+  startBtn.addEventListener("click", async () => {
+    try {
+      micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+
+      const mimeType = pickMimeType();
+      if (!mimeType) throw new Error("No supported recording format in this browser.");
+
+      recordedChunks = [];
+      mediaRecorder = new MediaRecorder(micStream, { mimeType });
+      mediaRecorder.ondataavailable = e => { if (e.data.size > 0) recordedChunks.push(e.data); };
+      mediaRecorder.onstop = onRecordingStopped;
+      mediaRecorder.start();
+
+      startBtn.style.display = "none";
+      stopBtn.style.display = "block";
+      timerRow.classList.add("live");
+      liveHint.textContent = "recording";
+      liveStatus.textContent = "";
+      liveVerdict.style.display = "none";
+      scopeIdle.style.display = "none";
+
+      recordStart = Date.now();
+      liveTimer.textContent = "00:00";
+      timerInterval = setInterval(() => {
+        const s = Math.floor((Date.now() - recordStart) / 1000);
+        liveTimer.textContent = `${String(Math.floor(s/60)).padStart(2,"0")}:${String(s%60).padStart(2,"0")}`;
+      }, 1000);
+
+      startMeter(micStream);
+
+    } catch (err) {
+      console.error(err);
+      liveStatus.textContent = "Microphone access denied — allow it in your browser to continue.";
+    }
+  });
+
+  stopBtn.addEventListener("click", () => {
+    if (mediaRecorder && mediaRecorder.state !== "inactive") mediaRecorder.stop();
+    if (micStream) { micStream.getTracks().forEach(t => t.stop()); micStream = null; }
+    clearInterval(timerInterval);
+    stopMeter();
+    startBtn.style.display = "block";
+    stopBtn.style.display = "none";
+    timerRow.classList.remove("live");
+    liveHint.textContent = "processing";
+  });
+
+  async function onRecordingStopped() {
+    const mimeType = mediaRecorder.mimeType || "audio/webm";
+    const blob = new Blob(recordedChunks, { type: mimeType });
+    scopeIdle.style.display = "block";
+    scopeIdle.textContent = "awaiting signal";
+
+    if (blob.size === 0) {
+      liveStatus.textContent = "No audio captured — try again.";
+      liveHint.textContent = "ready";
+      return;
+    }
+
+    liveStatus.textContent = "analyzing voice...";
+    const ext = mimeType.includes("webm") ? "webm" : "ogg";
+    const fd = new FormData();
+    fd.append("file", blob, `live_recording.${ext}`);
+
+    try {
+      const res = await fetch("/demo/analyze?source=microphone", { method: "POST", body: fd });
+      if (!res.ok) throw new Error(`${res.status}: ${await res.text()}`);
+      const result = await res.json();
+      liveStatus.textContent = "";
+      liveHint.textContent = "ready";
+      renderVerdict(liveVerdict, liveLed, liveLabel, liveConfBar, liveConfText, result);
+      renderReport(result);
+    } catch (err) {
+      console.error(err);
+      liveHint.textContent = "ready";
+      liveStatus.textContent = "Analysis failed — is the VoiceGuard backend running? (see console)";
+    }
+  }
+
+  function startMeter(stream) {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const source = audioCtx.createMediaStreamSource(stream);
+    analyser = audioCtx.createAnalyser();
+    analyser.fftSize = 64;
+    source.connect(analyser);
+
+    const data = new Uint8Array(analyser.frequencyBinCount);
+    const w = meterCanvas.width = meterCanvas.clientWidth;
+    const h = meterCanvas.height = meterCanvas.clientHeight;
+
+    function draw() {
+      meterRAF = requestAnimationFrame(draw);
+      analyser.getByteFrequencyData(data);
+      meterCtx.clearRect(0, 0, w, h);
+      const barW = w / data.length;
+      for (let i = 0; i < data.length; i++) {
+        const barH = (data[i] / 255) * h;
+        meterCtx.fillStyle = i % 5 === 0 ? "#ffb84d" : "#52ffa0";
+        meterCtx.fillRect(i * barW, h - barH, barW - 1.5, barH);
+      }
+    }
+    draw();
+  }
+
+  function stopMeter() {
+    if (meterRAF) cancelAnimationFrame(meterRAF);
+    if (audioCtx) audioCtx.close();
+    meterCtx.clearRect(0, 0, meterCanvas.width, meterCanvas.height);
+  }
+
+  // ============================================================
+  // UPLOAD
+  // ============================================================
+
+  dropZone.addEventListener("click", () => fileInput.click());
+
+  fileInput.addEventListener("change", () => {
+    const f = fileInput.files[0];
+    if (!f) return;
+    selectedFile = f;
+    fileName.textContent = f.name;
+    analyzeBtn.style.display = "block";
+    uploadVerdict.style.display = "none";
+    uploadStatus.textContent = "";
+  });
+
+  analyzeBtn.addEventListener("click", async () => {
+    if (!selectedFile) return;
+    analyzeBtn.disabled = true;
+    uploadStatus.textContent = "analyzing voice...";
+
+    const fd = new FormData();
+    fd.append("file", selectedFile, selectedFile.name);
+
+    try {
+      const res = await fetch("/demo/analyze?source=upload", { method: "POST", body: fd });
+      if (!res.ok) throw new Error(`${res.status}: ${await res.text()}`);
+      const result = await res.json();
+      uploadStatus.textContent = "";
+      renderVerdict(uploadVerdict, uploadLed, uploadLabel, uploadConfBar, uploadConfText, result);
+      renderReport(result);
+    } catch (err) {
+      console.error(err);
+      uploadStatus.textContent = "Analysis failed — is the VoiceGuard backend running? (see console)";
+    } finally {
+      analyzeBtn.disabled = false;
+    }
+  });
+
+  // ============================================================
+  // RENDERING
+  // ============================================================
+
+  function renderVerdict(container, ledEl, labelEl, barEl, textEl, result) {
+    const isFake = !!result.is_fake;
+    const cls = isFake ? "fake" : "real";
+    const label = result.voice_result || result.classification ||
+      (isFake ? "SYNTHETIC / CLONED VOICE" : "REAL HUMAN VOICE");
+
+    ledEl.className = "led " + cls;
+    labelEl.className = "verdict-label " + cls;
+    labelEl.textContent = label;
+
+    const pct = Math.round((result.confidence || 0) * 100);
+    const filled = Math.round((pct / 100) * BAR_SEGMENTS);
+    [...barEl.children].forEach((seg, i) => {
+      seg.className = i < filled ? `on ${cls}` : "";
+    });
+    textEl.textContent = `confidence ${pct}%`;
+
+    container.style.display = "block";
+  }
+
+  function renderReport(result) {
+    transcriptEl.textContent = (result.transcript && result.transcript.trim().length)
+      ? result.transcript
+      : "(no speech detected)";
+
+    const score = result.scam_score !== undefined ? result.scam_score : "—";
+    scamScoreEl.textContent = score;
+    scamScoreEl.className = "v " + (score >= 0.75 ? "danger" : score >= 0.45 ? "warn" : "ok");
+
+    urgencyEl.textContent = result.urgency_detected ? "yes" : "no";
+    urgencyEl.className = "v " + (result.urgency_detected ? "warn" : "ok");
+
+    const risk = (result.risk_level || "—").toLowerCase();
+    riskLevelEl.textContent = risk;
+    riskLevelEl.className = "v " + (risk === "high" ? "danger" : risk === "medium" ? "warn" : "ok");
+
+    const phrases = result.matched_phrases || [];
+    matchedPhrasesEl.textContent = phrases.length ? phrases.join(", ") : "none";
+
+    report.style.display = "block";
+  }
+
+  function pickMimeType() {
+    const formats = ["audio/webm;codecs=opus", "audio/webm", "audio/ogg;codecs=opus", "audio/ogg"];
+    return formats.find(f => MediaRecorder.isTypeSupported(f)) || null;
+  }
+
+})();
+</script>
+
+</body>
+</html>
