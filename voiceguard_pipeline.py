@@ -17,8 +17,11 @@ from risk_engine import calculate_risk
 # CONFIGURATION
 # ============================================================
 
-MODEL_FILE = r"ml_rebuild\models\voiceguard_v2a.pth"
-
+MODEL_FILE = os.path.join(
+    "ml_rebuild",
+    "models",
+    "voiceguard_v2a.pth"
+)
 WAV2VEC_MODEL_NAME = "facebook/wav2vec2-base-960h"
 
 TARGET_SAMPLE_RATE = 16000
